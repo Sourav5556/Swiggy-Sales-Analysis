@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swiggy Sales Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --surface: #141728;
+    --surface2: #1b1f35;
+    --border: #252a45;
+    --orange: #FF6B35;
+    --orange2: #ff8c5a;
+    --teal: #00d4aa;
+    --purple: #7c5cfc;
+    --yellow: #FFD700;
+    --text: #e8eaf6;
+    --muted: #7b82a8;
+    --red: #ff4d6d;
+    --green: #2ecc71;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image: radial-gradient(ellipse at 10% 0%, rgba(255,107,53,0.06) 0%, transparent 50%),
+                      radial-gradient(ellipse at 90% 100%, rgba(124,92,252,0.07) 0%, transparent 50%);
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--orange), #ff4500);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .logo-text { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  .logo-text span { color: var(--orange); }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .date-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .date-badge strong { color: var(--text); }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.8s ease-in-out infinite;
+    display: inline-block; margin-right: 6px;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* NAV TABS */
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 12px 22px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  /* MAIN LAYOUT */
+  .main { padding: 24px 32px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* KPI CARDS */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .kpi-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .kpi-card.c1::before { background: linear-gradient(90deg, var(--orange), var(--orange2)); }
+  .kpi-card.c2::before { background: linear-gradient(90deg, var(--teal), #00a884); }
+  .kpi-card.c3::before { background: linear-gradient(90deg, var(--purple), #9b7cff); }
+  .kpi-card.c4::before { background: linear-gradient(90deg, var(--yellow), #ffa500); }
+  .kpi-card.c5::before { background: linear-gradient(90deg, var(--red), #ff6b6b); }
+  .kpi-card.c6::before { background: linear-gradient(90deg, var(--green), #27ae60); }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Rajdhani', sans-serif; font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-card.c1 .kpi-value { color: var(--orange); }
+  .kpi-card.c2 .kpi-value { color: var(--teal); }
+  .kpi-card.c3 .kpi-value { color: var(--purple); }
+  .kpi-card.c4 .kpi-value { color: var(--yellow); }
+  .kpi-card.c5 .kpi-value { color: var(--red); }
+  .kpi-card.c6 .kpi-value { color: var(--green); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .kpi-icon { position: absolute; right: 14px; top: 16px; font-size: 24px; opacity: 0.15; }
+
+  /* CHART GRID */
+  .chart-row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .row-2 { grid-template-columns: 1fr 1fr; }
+  .row-3 { grid-template-columns: 2fr 1fr 1fr; }
+  .row-2-1 { grid-template-columns: 2fr 1fr; }
+  .row-1-2 { grid-template-columns: 1fr 2fr; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: box-shadow 0.2s;
+  }
+  .chart-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+  .chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .chart-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--text);
+  }
+  .chart-badge {
+    font-size: 10px; padding: 3px 9px;
+    border-radius: 20px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .badge-orange { background: rgba(255,107,53,0.15); color: var(--orange); }
+  .badge-teal { background: rgba(0,212,170,0.12); color: var(--teal); }
+  .badge-purple { background: rgba(124,92,252,0.15); color: var(--purple); }
+  .badge-yellow { background: rgba(255,215,0,0.12); color: var(--yellow); }
+
+  canvas { max-height: 260px; }
+  .chart-tall canvas { max-height: 320px; }
+
+  /* TABLE */
+  .data-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .data-table th {
+    padding: 8px 12px; text-align: left;
+    color: var(--muted); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.7px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 12px; border-bottom: 1px solid rgba(37,42,69,0.5);
+    color: var(--text); font-size: 13px;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,107,53,0.04); }
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700;
+  }
+  .rank-1 { background: rgba(255,215,0,0.2); color: var(--yellow); }
+  .rank-2 { background: rgba(192,192,192,0.15); color: #c0c0c0; }
+  .rank-3 { background: rgba(205,127,50,0.15); color: #cd7f32; }
+  .rank-other { background: rgba(123,130,168,0.1); color: var(--muted); }
+
+  .rating-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .rating-bar {
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--teal), var(--purple));
+  }
+  .rev-bar {
+    height: 6px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--orange), var(--orange2));
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex; gap: 12px; align-items: center;
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .filter-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; }
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+  select:focus { border-color: var(--orange); }
+
+  /* PROGRESS BARS */
+  .prog-item { margin-bottom: 12px; }
+  .prog-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: var(--text); }
+  .prog-track { height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+  /* HEATMAP */
+  .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .heatmap-cell {
+    aspect-ratio: 1; border-radius: 6px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 10px; text-align: center; gap: 3px;
+    cursor: default;
+    transition: transform 0.15s;
+  }
+  .heatmap-cell:hover { transform: scale(1.08); }
+  .heatmap-day { font-size: 9px; color: var(--muted); }
+  .heatmap-val { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700; }
+
+  /* METRIC CHIPS */
+  .metric-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    border: 1px solid;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .chip-orange { border-color: rgba(255,107,53,0.4); color: var(--orange); background: rgba(255,107,53,0.08); }
+  .chip-teal { border-color: rgba(0,212,170,0.4); color: var(--teal); background: rgba(0,212,170,0.08); }
+  .chip-purple { border-color: rgba(124,92,252,0.4); color: var(--purple); background: rgba(124,92,252,0.08); }
+
+  /* PAGE 2 - GEO */
+  .geo-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .geo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s;
+  }
+  .geo-card:hover { border-color: var(--orange); }
+  .geo-city { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; }
+  .geo-state { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+  .geo-stat { display: flex; justify-content: space-between; font-size: 12px; margin-top: 6px; }
+  .geo-stat-val { color: var(--orange); font-weight: 600; }
+
+  /* ANIMATION */
+  @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  .page.active > * { animation: fadeIn 0.35s ease forwards; }
+
+  /* FOOTER */
+  footer {
+    text-align: center; padding: 16px;
+    color: var(--muted); font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍔</div>
+    <div class="logo-text"><span>SWIGGY</span> ANALYTICS</div>
+  </div>
+  <div class="header-right">
+    <span><span class="live-dot"></span><span style="font-size:12px;color:var(--muted)">Live Dashboard</span></span>
+    <div class="date-badge">Dataset: <strong>Jan – Aug 2025</strong> &nbsp;|&nbsp; <strong>197,430</strong> Orders</div>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="showPage('overview')">📊 Overview</button>
+  <button class="tab-btn" onclick="showPage('geo')">🗺️ City Analysis</button>
+  <button class="tab-btn" onclick="showPage('restaurants')">🏪 Restaurants</button>
+  <button class="tab-btn" onclick="showPage('categories')">🍽️ Categories</button>
+</nav>
+
+<!-- ========== PAGE 1: OVERVIEW ========== -->
+<div class="main">
+<div id="page-overview" class="page active">
+
+  <div class="kpi-grid">
+    <div class="kpi-card c1">
+      <div class="kpi-icon">🛒</div>
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value">1,97,430</div>
+      <div class="kpi-sub">Jan – Aug 2025</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">₹5.30 Cr</div>
+      <div class="kpi-sub">₹53,012,505 total</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-icon">🧾</div>
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-value">₹268.5</div>
+      <div class="kpi-sub">Per transaction</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-label">Avg Rating</div>
+      <div class="kpi-value">4.34</div>
+      <div class="kpi-sub">Out of 5.0</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-icon">🏪</div>
+      <div class="kpi-label">Restaurants</div>
+      <div class="kpi-value">993</div>
+      <div class="kpi-sub">Across 28 cities</div>
+    </div>
+    <div class="kpi-card c6">
+      <div class="kpi-icon">🏙️</div>
+      <div class="kpi-label">Cities</div>
+      <div class="kpi-value">28</div>
+      <div class="kpi-sub">States covered: 28</div>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Monthly Orders & Revenue</span>
+        <span class="chart-badge badge-orange">2025</span>
+      </div>
+      <canvas id="monthlyChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Price Distribution</span>
+        <span class="chart-badge badge-teal">Brackets</span>
+      </div>
+      <canvas id="priceDistChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row row-3">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Orders by Day of Week</span>
+        <span class="chart-badge badge-purple">Weekly</span>
+      </div>
+      <canvas id="dowChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Rating Distribution</span>
+        <span class="chart-badge badge-yellow">Quality</span>
+      </div>
+      <canvas id="ratingDonut"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Revenue Split</span>
+        <span class="chart-badge badge-orange">Brands</span>
+      </div>
+      <canvas id="revSplitDonut"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== PAGE 2: GEO ========== -->
+<div id="page-geo" class="page">
+
+  <div class="kpi-grid">
+    <div class="kpi-card c1">
+      <div class="kpi-icon">🏙️</div>
+      <div class="kpi-label">Top City</div>
+      <div class="kpi-value">Bengaluru</div>
+      <div class="kpi-sub">20,077 orders</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-icon">💸</div>
+      <div class="kpi-label">Top Revenue City</div>
+      <div class="kpi-value">Bengaluru</div>
+      <div class="kpi-sub">₹54.6 Lakh</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-label">Highest Rated City</div>
+      <div class="kpi-value">Kolkata</div>
+      <div class="kpi-sub">Avg: 4.41</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Avg Orders/City</div>
+      <div class="kpi-value">7,051</div>
+      <div class="kpi-sub">Per city</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Avg Revenue/City</div>
+      <div class="kpi-value">₹18.9L</div>
+      <div class="kpi-sub">Per city</div>
+    </div>
+    <div class="kpi-card c6">
+      <div class="kpi-icon">🗺️</div>
+      <div class="kpi-label">Total States</div>
+      <div class="kpi-value">28</div>
+      <div class="kpi-sub">Pan India coverage</div>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card chart-tall">
+      <div class="chart-header">
+        <span class="chart-title">Top 15 Cities by Revenue (₹)</span>
+        <span class="chart-badge badge-orange">Revenue</span>
+      </div>
+      <canvas id="cityRevChart"></canvas>
+    </div>
+    <div class="chart-card chart-tall">
+      <div class="chart-header">
+        <span class="chart-title">Top 15 Cities by Order Volume</span>
+        <span class="chart-badge badge-teal">Orders</span>
+      </div>
+      <canvas id="cityOrderChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">City Average Rating Comparison</span>
+        <span class="chart-badge badge-yellow">Quality</span>
+      </div>
+      <canvas id="cityRatingChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">City Performance Matrix (Revenue vs Orders)</span>
+        <span class="chart-badge badge-purple">Matrix</span>
+      </div>
+      <canvas id="cityScatterChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== PAGE 3: RESTAURANTS ========== -->
+<div id="page-restaurants" class="page">
+
+  <div class="kpi-grid">
+    <div class="kpi-card c1">
+      <div class="kpi-icon">👑</div>
+      <div class="kpi-label">Top Brand</div>
+      <div class="kpi-value">KFC</div>
+      <div class="kpi-sub">₹42.5 Lakh Revenue</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-icon">🛒</div>
+      <div class="kpi-label">Most Orders</div>
+      <div class="kpi-value">McDonald's</div>
+      <div class="kpi-sub">13,530 orders</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-label">Best Rated</div>
+      <div class="kpi-value">Baskin Robbins</div>
+      <div class="kpi-sub">Avg 4.43 rating</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-icon">🍕</div>
+      <div class="kpi-label">Total Brands</div>
+      <div class="kpi-value">993</div>
+      <div class="kpi-sub">Unique restaurants</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-icon">💲</div>
+      <div class="kpi-label">Avg Per Brand</div>
+      <div class="kpi-value">₹53,386</div>
+      <div class="kpi-sub">Average revenue</div>
+    </div>
+    <div class="kpi-card c6">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label">Top 10 Share</div>
+      <div class="kpi-value">36.2%</div>
+      <div class="kpi-sub">Of total revenue</div>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Top 10 Restaurants by Revenue</span>
+        <span class="chart-badge badge-orange">₹ Revenue</span>
+      </div>
+      <canvas id="restRevChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Top 10 Restaurants by Orders</span>
+        <span class="chart-badge badge-teal">Orders</span>
+      </div>
+      <canvas id="restOrderChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Restaurant Leaderboard</span>
+        <span class="chart-badge badge-purple">Top 10</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Restaurant</th>
+            <th>Orders</th>
+            <th>Revenue</th>
+            <th>Rating</th>
+            <th>Performance</th>
+          </tr>
+        </thead>
+        <tbody id="restTable"></tbody>
+      </table>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Revenue vs Rating (Top 10)</span>
+        <span class="chart-badge badge-yellow">Scatter</span>
+      </div>
+      <canvas id="restScatter"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== PAGE 4: CATEGORIES ========== -->
+<div id="page-categories" class="page">
+
+  <div class="kpi-grid">
+    <div class="kpi-card c1">
+      <div class="kpi-icon">🏷️</div>
+      <div class="kpi-label">Total Categories</div>
+      <div class="kpi-value">4,972</div>
+      <div class="kpi-sub">Unique menu sections</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-icon">🥇</div>
+      <div class="kpi-label">Top Category</div>
+      <div class="kpi-value">Recommended</div>
+      <div class="kpi-sub">24,100 items ordered</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-icon">🍽️</div>
+      <div class="kpi-label">Main Course</div>
+      <div class="kpi-value">2,959</div>
+      <div class="kpi-sub">Orders</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-icon">🍰</div>
+      <div class="kpi-label">Desserts</div>
+      <div class="kpi-value">2,944</div>
+      <div class="kpi-sub">Orders</div>
+    </div>
+    <div class="kpi-card c5">
+      <div class="kpi-icon">🧃</div>
+      <div class="kpi-label">Beverages</div>
+      <div class="kpi-value">2,464</div>
+      <div class="kpi-sub">Orders</div>
+    </div>
+    <div class="kpi-card c6">
+      <div class="kpi-icon">🥗</div>
+      <div class="kpi-label">Starters</div>
+      <div class="kpi-value">1,673</div>
+      <div class="kpi-sub">Orders</div>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card chart-tall">
+      <div class="chart-header">
+        <span class="chart-title">Top 15 Food Categories by Orders</span>
+        <span class="chart-badge badge-orange">Popularity</span>
+      </div>
+      <canvas id="catBarChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Top 8 Categories Share</span>
+        <span class="chart-badge badge-teal">Proportion</span>
+      </div>
+      <canvas id="catPieChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row row-2">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Category Progress — Top 12</span>
+        <span class="chart-badge badge-purple">Visual</span>
+      </div>
+      <div id="catProgressBars"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Category Type Breakdown</span>
+        <span class="chart-badge badge-yellow">Groups</span>
+      </div>
+      <canvas id="catGroupChart"></canvas>
+    </div>
+  </div>
+
+</div>
+</div><!-- /main -->
+
+<footer>
+  Swiggy Sales Analytics Dashboard &nbsp;|&nbsp; Data: Jan–Aug 2025 &nbsp;|&nbsp; 197,430 Orders &nbsp;|&nbsp; 28 Cities &nbsp;|&nbsp; 993 Restaurants
+</footer>
+
+<script>
+// ---- DATA ----
+const monthlyData = {
+  labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'],
+  orders: [25398,23296,24402,24588,25190,24385,24940,25231],
+  revenue: [6825186,6269106,6573530,6594515,6793558,6514183,6650966,6791462]
+};
+
+const cityData = {
+  names: ['Bengaluru','Lucknow','Hyderabad','Mumbai','New Delhi','Ahmedabad','Chandigarh','Kolkata','Chennai','Jaipur','Pune','Surat','Patna','Agra','Kochi','Nagpur','Bhopal','Visakhapatnam','Indore','Coimbatore'],
+  orders: [20077,10192,10309,10507,10191,10185,10065,10046,10042,10286,7500,7200,6800,6500,6200,6000,5800,5600,5400,5200],
+  revenue: [5456798,3117360,3021712,3015573,2829181,2817836,2809441,2662802,2642595,2502933,1950000,1850000,1750000,1680000,1600000,1550000,1480000,1420000,1380000,1320000],
+  rating: [4.31,4.37,4.27,4.34,4.34,4.39,4.34,4.41,4.37,4.34,4.33,4.35,4.30,4.28,4.36,4.32,4.29,4.33,4.31,4.35]
+};
+
+const restData = {
+  names: ["KFC","McDonald's","Pizza Hut","Burger King","Domino's Pizza","Olio Pizzeria","LunchBox","Baskin Robbins","Faasos","The Good Bowl"],
+  orders: [12961,13530,6529,7116,5492,3241,4700,4197,3256,2665],
+  revenue: [4246952,3343095,2133266,1900817,1834022,1236369,1101141,860592,780215,673343],
+  rating: [4.30,4.40,4.20,4.34,4.37,4.29,4.37,4.43,4.36,4.34]
+};
+
+const catData = {
+  names: ['Recommended','Main Course','Desserts','Beverages','McSaver Combos','Exclusive Deals','Sweets','Starters','Breads','Snacks','Burger Combos','DOTD','Burgers','Value Scoops','Coffee & Bev'],
+  orders: [24100,2959,2944,2464,1885,1717,1715,1673,1422,1387,1331,1307,1301,1272,1257]
+};
+
+const dowData = {
+  labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+  orders: [27571,27415,28287,28457,28288,28938,28474]
+};
+
+const priceData = {
+  labels: ['Under ₹100','₹100–200','₹200–400','₹400–800','₹800+'],
+  values: [28347,56742,84627,23419,4295]
+};
+
+// ---- CHART CONFIG ----
+Chart.defaults.color = '#7b82a8';
+Chart.defaults.borderColor = '#252a45';
+Chart.defaults.font.family = 'DM Sans';
+
+function grad(ctx, c1, c2, vert=true) {
+  const g = vert
+    ? ctx.createLinearGradient(0, 0, 0, 300)
+    : ctx.createLinearGradient(0, 0, 300, 0);
+  g.addColorStop(0, c1); g.addColorStop(1, c2);
+  return g;
+}
+
+// MONTHLY CHART
+(function(){
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: monthlyData.labels,
+      datasets: [
+        {
+          label: 'Orders',
+          data: monthlyData.orders,
+          backgroundColor: 'rgba(255,107,53,0.75)',
+          borderRadius: 5,
+          yAxisID: 'y',
+          order: 2
+        },
+        {
+          label: 'Revenue (₹)',
+          data: monthlyData.revenue,
+          type: 'line',
+          borderColor: '#00d4aa',
+          backgroundColor: 'rgba(0,212,170,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#00d4aa',
+          pointRadius: 4,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y1',
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        y: { grid: { color: 'rgba(37,42,69,0.7)' }, ticks: { font:{size:11} } },
+        y1: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { callback: v => '₹'+(v/100000).toFixed(1)+'L', font:{size:11} }
+        }
+      }
+    }
+  });
+})();
+
+// PRICE DIST
+(function(){
+  const ctx = document.getElementById('priceDistChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: priceData.labels,
+      datasets: [{
+        data: priceData.values,
+        backgroundColor: ['#00d4aa','#FF6B35','#7c5cfc','#FFD700','#ff4d6d'],
+        borderColor: '#141728',
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font:{size:11} } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()} orders` } }
+      },
+      cutout: '62%'
+    }
+  });
+})();
+
+// DAY OF WEEK
+(function(){
+  const ctx = document.getElementById('dowChart').getContext('2d');
+  const colors = dowData.orders.map((v,i) => v === Math.max(...dowData.orders) ? '#FF6B35' : 'rgba(124,92,252,0.7)');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: dowData.labels,
+      datasets: [{
+        label: 'Orders',
+        data: dowData.orders,
+        backgroundColor: colors,
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(37,42,69,0.7)' }, ticks: { font:{size:10} } },
+        x: { grid: { display: false }, ticks: { font:{size:11} } }
+      }
+    }
+  });
+})();
+
+// RATING DONUT
+(function(){
+  const ctx = document.getElementById('ratingDonut').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Below 3','3.0–3.9','4.0–4.3','4.4–4.7','4.8–5.0'],
+      datasets: [{
+        data: [729, 11803, 120436, 49298, 15164],
+        backgroundColor: ['#ff4d6d','#FFD700','#FF6B35','#00d4aa','#7c5cfc'],
+        borderColor: '#141728', borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font:{size:10} } }
+      },
+      cutout: '60%'
+    }
+  });
+})();
+
+// REV SPLIT DONUT
+(function(){
+  const ctx = document.getElementById('revSplitDonut').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ["KFC","McDonald's","Pizza Hut","Burger King","Domino's","Others"],
+      datasets: [{
+        data: [4246952,3343095,2133266,1900817,1834022,39554353],
+        backgroundColor: ['#FF6B35','#00d4aa','#7c5cfc','#FFD700','#ff4d6d','#2ecc71'],
+        borderColor: '#141728', borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font:{size:10} } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ₹${(ctx.parsed/100000).toFixed(1)}L` } }
+      },
+      cutout: '60%'
+    }
+  });
+})();
+
+// CITY REVENUE BAR (horizontal)
+(function(){
+  const ctx = document.getElementById('cityRevChart').getContext('2d');
+  const top15 = cityData.names.slice(0,15);
+  const top15rev = cityData.revenue.slice(0,15);
+  const colors = top15rev.map((v,i) => `hsl(${20 + i*12}, ${80-i}%, ${60-i*1.5}%)`);
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top15,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: top15rev,
+        backgroundColor: colors,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ₹${(ctx.parsed.x/100000).toFixed(2)}L` } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(37,42,69,0.6)' }, ticks: { callback: v => '₹'+(v/100000).toFixed(0)+'L', font:{size:9} } },
+        y: { grid: { display: false }, ticks: { font:{size:10} } }
+      }
+    }
+  });
+})();
+
+// CITY ORDER BAR
+(function(){
+  const ctx = document.getElementById('cityOrderChart').getContext('2d');
+  const top15 = cityData.names.slice(0,15);
+  const top15ord = cityData.orders.slice(0,15);
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top15,
+      datasets: [{
+        label: 'Orders',
+        data: top15ord,
+        backgroundColor: 'rgba(0,212,170,0.75)',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(37,42,69,0.6)' }, ticks: { font:{size:9} } },
+        y: { grid: { display: false }, ticks: { font:{size:10} } }
+      }
+    }
+  });
+})();
+
+// CITY RATING CHART
+(function(){
+  const ctx = document.getElementById('cityRatingChart').getContext('2d');
+  const sorted = cityData.names.slice(0,15).map((n,i) => ({n, r: cityData.rating[i]})).sort((a,b)=>b.r-a.r);
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d=>d.n),
+      datasets: [{
+        label: 'Avg Rating',
+        data: sorted.map(d=>d.r),
+        backgroundColor: sorted.map(d => d.r >= 4.35 ? '#00d4aa' : d.r >= 4.30 ? '#7c5cfc' : '#FF6B35'),
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 4.2, grid: { color: 'rgba(37,42,69,0.6)' }, ticks: { font:{size:10} } },
+        x: { grid: { display: false }, ticks: { font:{size:9}, maxRotation: 45 } }
+      }
+    }
+  });
+})();
+
+// CITY SCATTER
+(function(){
+  const ctx = document.getElementById('cityScatterChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Cities',
+        data: cityData.names.slice(0,15).map((n,i) => ({
+          x: cityData.orders[i], y: cityData.revenue[i]/100000, label: n
+        })),
+        backgroundColor: 'rgba(255,107,53,0.7)',
+        borderColor: '#FF6B35',
+        pointRadius: 8,
+        pointHoverRadius: 11
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw.label}: ${ctx.raw.x.toLocaleString()} orders | ₹${ctx.raw.y.toFixed(1)}L`
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Orders', color: '#7b82a8' }, grid: { color: 'rgba(37,42,69,0.6)' } },
+        y: { title: { display: true, text: 'Revenue (₹L)', color: '#7b82a8' }, grid: { color: 'rgba(37,42,69,0.6)' } }
+      }
+    }
+  });
+})();
+
+// RESTAURANT CHARTS
+(function(){
+  // Revenue
+  const ctx1 = document.getElementById('restRevChart').getContext('2d');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: restData.names,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: restData.revenue,
+        backgroundColor: restData.revenue.map((v,i) => `hsla(${20+i*18},85%,${62-i*2}%,0.85)`),
+        borderRadius: 5
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ₹${(ctx.parsed.x/100000).toFixed(2)}L` } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(37,42,69,0.6)' }, ticks: { callback: v => '₹'+(v/100000).toFixed(0)+'L', font:{size:10} } },
+        y: { grid: { display: false }, ticks: { font:{size:11} } }
+      }
+    }
+  });
+
+  const ctx2 = document.getElementById('restOrderChart').getContext('2d');
+  new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: restData.names,
+      datasets: [{
+        label: 'Orders',
+        data: restData.orders,
+        backgroundColor: 'rgba(0,212,170,0.8)',
+        borderRadius: 5
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(37,42,69,0.6)' }, ticks: { font:{size:10} } },
+        y: { grid: { display: false }, ticks: { font:{size:11} } }
+      }
+    }
+  });
+})();
+
+// RESTAURANT TABLE
+(function(){
+  const tbody = document.getElementById('restTable');
+  const rankClass = i => i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+  const maxRev = Math.max(...restData.revenue);
+  restData.names.forEach((name,i) => {
+    const pct = (restData.revenue[i]/maxRev*100).toFixed(0);
+    tbody.innerHTML += `
+      <tr>
+        <td><span class="rank-badge ${rankClass(i)}">${i+1}</span></td>
+        <td><strong>${name}</strong></td>
+        <td>${restData.orders[i].toLocaleString()}</td>
+        <td>₹${(restData.revenue[i]/100000).toFixed(2)}L</td>
+        <td>⭐ ${restData.rating[i].toFixed(2)}</td>
+        <td><div class="rating-bar-wrap"><div class="rev-bar" style="width:${pct}px;"></div><span style="font-size:11px;color:var(--muted)">${pct}%</span></div></td>
+      </tr>`;
+  });
+})();
+
+// RESTAURANT SCATTER
+(function(){
+  const ctx = document.getElementById('restScatter').getContext('2d');
+  new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        label: 'Restaurants',
+        data: restData.names.map((n,i) => ({
+          x: restData.rating[i],
+          y: restData.revenue[i]/100000,
+          r: Math.sqrt(restData.orders[i])/5,
+          label: n
+        })),
+        backgroundColor: 'rgba(255,107,53,0.65)',
+        borderColor: '#FF6B35'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.raw.label}: Rating ${ctx.raw.x} | ₹${ctx.raw.y.toFixed(1)}L` } }
+      },
+      scales: {
+        x: { title:{display:true,text:'Avg Rating',color:'#7b82a8'}, min:4.1, max:4.5, grid:{color:'rgba(37,42,69,0.6)'} },
+        y: { title:{display:true,text:'Revenue (₹L)',color:'#7b82a8'}, grid:{color:'rgba(37,42,69,0.6)'} }
+      }
+    }
+  });
+})();
+
+// CATEGORY BAR
+(function(){
+  const ctx = document.getElementById('catBarChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: catData.names,
+      datasets: [{
+        label: 'Orders',
+        data: catData.orders,
+        backgroundColor: catData.orders.map((v,i)=>`hsla(${200+i*12},75%,${62-i}%,0.85)`),
+        borderRadius: 5
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(37,42,69,0.6)' }, ticks: { font:{size:10} } },
+        y: { grid: { display: false }, ticks: { font:{size:10} } }
+      }
+    }
+  });
+})();
+
+// CATEGORY PIE
+(function(){
+  const ctx = document.getElementById('catPieChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: catData.names.slice(0,8),
+      datasets: [{
+        data: catData.orders.slice(0,8),
+        backgroundColor: ['#FF6B35','#00d4aa','#7c5cfc','#FFD700','#ff4d6d','#2ecc71','#3498db','#e67e22'],
+        borderColor: '#141728', borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font:{size:10} } }
+      }
+    }
+  });
+})();
+
+// CATEGORY PROGRESS BARS
+(function(){
+  const container = document.getElementById('catProgressBars');
+  const maxVal = catData.orders[0];
+  const colors = ['#FF6B35','#00d4aa','#7c5cfc','#FFD700','#ff4d6d','#2ecc71','#3498db','#e67e22','#9b59b6','#1abc9c','#e74c3c','#f39c12'];
+  catData.names.slice(0,12).forEach((name,i) => {
+    const pct = (catData.orders[i]/maxVal*100).toFixed(1);
+    container.innerHTML += `
+      <div class="prog-item">
+        <div class="prog-label">
+          <span>${name}</span>
+          <span style="color:${colors[i]};font-weight:600">${catData.orders[i].toLocaleString()}</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" style="width:${pct}%;background:${colors[i]};"></div>
+        </div>
+      </div>`;
+  });
+})();
+
+// CATEGORY GROUP CHART
+(function(){
+  const ctx = document.getElementById('catGroupChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Fast Food','Meals & Mains','Desserts & Sweets','Beverages','Snacks & Breads','Deals & Combos','Others'],
+      datasets: [{
+        data: [24100+1301+1331+1885, 2959+1673, 2944+1715, 2464+1257, 1387+1422, 1717+1307, 5000],
+        backgroundColor: ['#FF6B35','#00d4aa','#7c5cfc','#FFD700','#ff4d6d','#2ecc71','#7b82a8'],
+        borderColor: '#141728', borderWidth: 3, hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, font:{size:11} } }
+      },
+      cutout: '55%'
+    }
+  });
+})();
+
+// PAGE SWITCHING
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
